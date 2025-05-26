@@ -60,4 +60,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'unifinder2-4fcef.firebasestorage.app',
     iosBundleId: 'com.example.unifinder2',
   );
+
 }
