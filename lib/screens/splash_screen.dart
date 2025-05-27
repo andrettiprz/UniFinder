@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../auth/auth_provider.dart';
+import '../auth/login_screen.dart';
 import '../theme/app_theme.dart';
 import '../main.dart';
 
@@ -41,12 +44,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward().then((_) {
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
                   FadeTransition(
                 opacity: animation,
-                child: const MainNavigationScreen(),
+                child: authProvider.isAuthenticated 
+                    ? const MainNavigationScreen()
+                    : const LoginScreen(),
               ),
               transitionDuration: const Duration(milliseconds: 500),
             ),

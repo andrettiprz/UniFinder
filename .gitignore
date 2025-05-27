@@ -43,3 +43,33 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter / Dart
+.dart_tool/
+.build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+pubspec.lock
+build/
+
+# Firebase config y secrets
+lib/firebase_options.dart
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+
+# Variables de entorno
+.env
+.env.*
+
+# Service accounts / keystores
+serviceAccountKey.json
+*.jks
+key.properties
+
+# Mac / Windows / editores
+.DS_Store
+*.swp
+.idea/
+.vscode/
