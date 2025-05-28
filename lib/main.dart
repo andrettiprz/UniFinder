@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'auth/auth_provider.dart';
 import 'providers/favorites_provider.dart';
 import 'providers/review_provider.dart';
+import 'providers/universidad_provider.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
@@ -12,6 +13,7 @@ import 'screens/splash_screen.dart';
 import 'screens/my_reviews_screen.dart';
 import 'auth/login_screen.dart';
 import 'theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +33,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => FavoritesProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
+        ChangeNotifierProvider(create: (_) => UniversidadProvider()),
       ],
       child: MaterialApp(
         title: 'UniFinder',
@@ -148,11 +151,35 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.school_outlined),
+              title: const Text('¿No sabes qué estudiar?'),
+              subtitle: const Text('Realiza un test vocacional'),
+              onTap: () async {
+                Navigator.pop(context); // Cierra el drawer
+                final url = Uri.parse('https://quevasaestudiar.com/test-vocacional/');
+                try {
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No se pudo abrir el enlace'),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Cerrar Sesión'),
               onTap: () async {
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final universidadProvider = Provider.of<UniversidadProvider>(context, listen: false);
                 await authProvider.logout();
+                universidadProvider.clear();
                 if (context.mounted) {
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => const LoginScreen()),

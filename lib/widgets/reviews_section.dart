@@ -21,6 +21,8 @@ class ReviewsSection extends StatefulWidget {
 }
 
 class _ReviewsSectionState extends State<ReviewsSection> {
+  bool _showAllReviews = false;
+
   @override
   void initState() {
     super.initState();
@@ -100,59 +102,85 @@ class _ReviewsSectionState extends State<ReviewsSection> {
       builder: (context, reviewProvider, child) {
         final reviews = reviewProvider.universidadReviews[widget.universidadId] ?? [];
         final promedio = reviewProvider.promedioRatings[widget.universidadId] ?? 0.0;
+        
+        // Determinar cuántas reviews mostrar
+        final displayedReviews = _showAllReviews ? reviews : reviews.take(3).toList();
+        final hasMoreReviews = reviews.length > 3;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
+            Container(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Reviews',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (reviews.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            RatingBarIndicator(
-                              rating: promedio,
-                              itemBuilder: (context, _) => const Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                              ),
-                              itemCount: 5,
-                              itemSize: 20,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Reviews',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${promedio.toStringAsFixed(1)} (${reviews.length})',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                          ),
+                          if (reviews.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                RatingBarIndicator(
+                                  rating: promedio,
+                                  itemBuilder: (context, _) => const Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                  ),
+                                  itemCount: 5,
+                                  itemSize: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${promedio.toStringAsFixed(1)} (${reviews.length})',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
+                        ],
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _showReviewDialog(context),
+                        icon: const Icon(Icons.rate_review),
+                        label: const Text('Escribir Review'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
                         ),
-                      ],
+                      ),
                     ],
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showReviewDialog(context),
-                    icon: const Icon(Icons.rate_review),
-                    label: const Text('Escribir Review'),
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 16),
             if (reviews.isEmpty)
               const Padding(
                 padding: EdgeInsets.all(16),
@@ -162,17 +190,39 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                 ),
               )
             else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: reviews.length,
-                itemBuilder: (context, index) {
-                  final review = reviews[index];
-                  return ReviewTile(
-                    review: review,
-                    onEdit: () => _showReviewDialog(context, review),
-                  );
-                },
+              Column(
+                children: [
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: displayedReviews.length,
+                    itemBuilder: (context, index) {
+                      final review = displayedReviews[index];
+                      return ReviewTile(
+                        review: review,
+                        onEdit: () => _showReviewDialog(context, review),
+                      );
+                    },
+                  ),
+                  if (hasMoreReviews && !_showAllReviews)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _showAllReviews = true;
+                          });
+                        },
+                        child: Text(
+                          'Ver todas las reviews (${reviews.length})',
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
           ],
         );

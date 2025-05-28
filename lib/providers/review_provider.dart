@@ -9,6 +9,7 @@ class ReviewProvider with ChangeNotifier {
   List<Review> _userReviews = [];
   Map<String, List<Review>> _universidadReviews = {};
   Map<String, double> _promedioRatings = {};
+  Map<String, bool> _loadingUniversidades = {};
 
   List<Review> get userReviews => _userReviews;
   Map<String, List<Review>> get universidadReviews => _universidadReviews;
@@ -24,11 +25,26 @@ class ReviewProvider with ChangeNotifier {
 
   // Cargar reviews de una universidad
   Future<void> loadUniversidadReviews(String universidadId) async {
-    _reviewService.getUniversidadReviews(universidadId).listen((reviews) {
-      _universidadReviews[universidadId] = reviews;
-      _actualizarRatingUniversidad(universidadId, reviews);
-      notifyListeners();
-    });
+    // Evitar cargar múltiples veces
+    if (_loadingUniversidades[universidadId] == true) {
+      return;
+    }
+    
+    _loadingUniversidades[universidadId] = true;
+    
+    // Limpiar las reviews existentes para esta universidad
+    _universidadReviews[universidadId] = [];
+    
+    _reviewService.getUniversidadReviews(universidadId).listen(
+      (reviews) {
+        _universidadReviews[universidadId] = reviews;
+        _actualizarRatingUniversidad(universidadId, reviews);
+        notifyListeners();
+      },
+      onDone: () {
+        _loadingUniversidades[universidadId] = false;
+      },
+    );
   }
 
   // Actualizar el rating de una universidad
@@ -63,12 +79,19 @@ class ReviewProvider with ChangeNotifier {
   // Crear una nueva review
   Future<Review> createReview(Review review) async {
     final newReview = await _reviewService.createReview(review);
-    _userReviews = [..._userReviews, newReview];
     
+    // Actualizar las reviews del usuario
+    if (!_userReviews.any((r) => r.id == newReview.id)) {
+      _userReviews = [..._userReviews, newReview];
+    }
+    
+    // Actualizar las reviews de la universidad
     final universidadId = review.universidadId;
     if (_universidadReviews.containsKey(universidadId)) {
-      _universidadReviews[universidadId] = [..._universidadReviews[universidadId]!, newReview];
-      await _actualizarRatingUniversidad(universidadId, _universidadReviews[universidadId]!);
+      if (!_universidadReviews[universidadId]!.any((r) => r.id == newReview.id)) {
+        _universidadReviews[universidadId] = [..._universidadReviews[universidadId]!, newReview];
+        await _actualizarRatingUniversidad(universidadId, _universidadReviews[universidadId]!);
+      }
     }
     
     notifyListeners();
@@ -110,5 +133,14 @@ class ReviewProvider with ChangeNotifier {
   // Verificar si un usuario ya ha hecho review de una universidad
   Future<bool> hasUserReviewed(String userId, String universidadId) {
     return _reviewService.hasUserReviewed(userId, universidadId);
+  }
+
+  // Limpiar los datos cuando sea necesario
+  void clear() {
+    _userReviews = [];
+    _universidadReviews = {};
+    _promedioRatings = {};
+    _loadingUniversidades = {};
+    notifyListeners();
   }
 } 

@@ -49,16 +49,16 @@ class UniversidadDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
+            ReviewsSection(
+              universidadId: universidad.nombre,
+              universidadNombre: universidad.nombre,
+            ),
+            const SizedBox(height: 24),
             _buildSection(
               'Carreras Disponibles (${universidad.numeroCarreras})',
               universidad.carreras.map((carrera) => 
                 _buildInfoRow(Icons.school, '', carrera)
               ).toList(),
-            ),
-            const SizedBox(height: 24),
-            ReviewsSection(
-              universidadId: universidad.nombre,
-              universidadNombre: universidad.nombre,
             ),
           ],
         ),

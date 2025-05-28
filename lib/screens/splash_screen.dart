@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../auth/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../theme/app_theme.dart';
@@ -10,6 +11,7 @@ import '../services/initial_data_service.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/review_provider.dart';
 import '../providers/universidad_provider.dart';
+import '../models/universidad.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -72,15 +74,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
       if (mounted) {
         final universidades = results[0] as List<Universidad>;
-        final ratingsSnapshot = results[1] as QuerySnapshot;
+        final ratingsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
 
         // Crear mapa de ratings
         final ratings = <String, double>{};
         final numReviews = <String, int>{};
         for (var doc in ratingsSnapshot.docs) {
-          final universidadId = doc['universidadId'] as String;
-          ratings[universidadId] = (doc['rating'] as num).toDouble();
-          numReviews[universidadId] = (doc['numReviews'] as num).toInt();
+          final universidadId = doc.data()['universidadId'] as String;
+          ratings[universidadId] = (doc.data()['rating'] as num).toDouble();
+          numReviews[universidadId] = (doc.data()['numReviews'] as num).toInt();
         }
 
         // Inicializar providers
@@ -92,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         if (authProvider.isAuthenticated && authProvider.user != null) {
           // Inicializar favoritos
-          await favoritesProvider.init();
+          favoritesProvider.init();
           // Inicializar reseñas del usuario
           await reviewProvider.loadUserReviews(authProvider.user!.uid);
         }

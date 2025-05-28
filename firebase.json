@@ -1,1 +1,51 @@
-{"flutter":{"platforms":{"ios":{"default":{"projectId":"unifinder2-4fcef","appId":"1:663593276314:ios:bea7f0452d4a48d68a2023","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"unifinder2-4fcef","configurations":{"ios":"1:663593276314:ios:bea7f0452d4a48d68a2023"}}},"android":{"default":{"projectId":"unifinder2-4fcef","appId":"1:663593276314:android:9b20aac84b34ed568a2023","fileOutput":"android/app/google-services.json"}},"macos":{"default":{"projectId":"unifinder2-4fcef","appId":"1:663593276314:ios:bea7f0452d4a48d68a2023","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "ios": {
+        "default": {
+          "projectId": "unifinder2-4fcef",
+          "appId": "1:663593276314:ios:bea7f0452d4a48d68a2023",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "unifinder2-4fcef",
+          "configurations": {
+            "ios": "1:663593276314:ios:bea7f0452d4a48d68a2023"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "unifinder2-4fcef",
+          "appId": "1:663593276314:android:9b20aac84b34ed568a2023",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "unifinder2-4fcef",
+          "appId": "1:663593276314:ios:bea7f0452d4a48d68a2023",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

@@ -4,26 +4,6 @@
     "project_id": "unifinder2-4fcef",
     "storage_bucket": "unifinder2-4fcef.firebasestorage.app"
   },
-  "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:663593276314:android:9b20aac84b34ed568a2023",
-        "android_client_info": {
-          "package_name": "com.example.unifinder2"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBKPXzxaqT6ad4-i2WIx64cZGvZ95-4o_Q"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    }
-  ],
+  "client": [],
   "configuration_version": "1"
 }
