@@ -3,25 +3,46 @@ class Universidad {
   final List<String> carreras;
   final Map<String, String> contacto;
   final Map<String, String> direccion;
+  double rating;
+  int numReviews;
 
   Universidad({
     required this.nombre,
     required this.carreras,
     required this.contacto,
     required this.direccion,
+    this.rating = 0.0,
+    this.numReviews = 0,
   });
 
   factory Universidad.fromJson(Map<String, dynamic> json) {
     return Universidad(
-      nombre: json['nombre'] as String,
-      carreras: List<String>.from(json['carreras']),
-      contacto: Map<String, String>.from(json['contacto'].map(
-        (key, value) => MapEntry(key, value?.toString() ?? ''),
-      )),
-      direccion: Map<String, String>.from(json['direccion'].map(
-        (key, value) => MapEntry(key, value?.toString() ?? ''),
-      )),
+      nombre: json['nombre'] as String? ?? '',
+      carreras: (json['carreras'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      contacto: Map<String, String>.from(
+        (json['contacto'] as Map<dynamic, dynamic>? ?? {}).map(
+          (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+        ),
+      ),
+      direccion: Map<String, String>.from(
+        (json['direccion'] as Map<dynamic, dynamic>? ?? {}).map(
+          (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+        ),
+      ),
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      numReviews: (json['numReviews'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nombre': nombre,
+      'carreras': carreras.isEmpty ? [] : carreras,
+      'contacto': contacto.isEmpty ? {} : contacto,
+      'direccion': direccion.isEmpty ? {} : direccion,
+      'rating': rating,
+      'numReviews': numReviews,
+    };
   }
 
   int get numeroCarreras => carreras.length;

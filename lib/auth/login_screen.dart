@@ -58,10 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
-            child: Column(
+        child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+          children: [
                 const Text(
                   'Iniciar Sesión',
                   style: TextStyle(
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                     return null;
                   },
-                ),
+            ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                     return null;
                   },
-                ),
+            ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _login,

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/universidad.dart';
+import '../providers/favorites_provider.dart';
+import '../widgets/reviews_section.dart';
 
 class UniversidadDetailScreen extends StatelessWidget {
   final Universidad universidad;
@@ -14,6 +17,9 @@ class UniversidadDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(universidad.nombre),
+        actions: [
+          _FavoriteButton(universidad: universidad),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -48,6 +54,11 @@ class UniversidadDetailScreen extends StatelessWidget {
               universidad.carreras.map((carrera) => 
                 _buildInfoRow(Icons.school, '', carrera)
               ).toList(),
+            ),
+            const SizedBox(height: 24),
+            ReviewsSection(
+              universidadId: universidad.nombre,
+              universidadNombre: universidad.nombre,
             ),
           ],
         ),
@@ -103,6 +114,106 @@ class UniversidadDetailScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FavoriteButton extends StatelessWidget {
+  final Universidad universidad;
+
+  const _FavoriteButton({
+    required this.universidad,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<FavoritesProvider>(
+      builder: (context, favoritesProvider, child) {
+        return FutureBuilder<bool>(
+          future: favoritesProvider.isFavorite(universidad.nombre),
+          builder: (context, snapshot) {
+            final isFavorite = snapshot.data ?? false;
+            
+            return IconButton(
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : null,
+              ),
+              onPressed: favoritesProvider.isLoading
+                  ? null
+                  : () async {
+                      final isNowFavorite = await favoritesProvider.toggleFavorite(universidad);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isNowFavorite
+                                  ? 'Agregado a favoritos'
+                                  : 'Eliminado de favoritos',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+
+  const _SectionTitle({
+    required this.title,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              subtitle!,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final Widget child;
+
+  const _InfoCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: child,
       ),
     );
   }
