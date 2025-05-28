@@ -8,6 +8,7 @@ import '../services/universidad_service.dart';
 
 class InitialDataService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final UniversidadService _universidadService = UniversidadService();
   final Random _random = Random();
 
   final List<Map<String, dynamic>> _topUniversidades = [
@@ -159,21 +160,37 @@ class InitialDataService {
         return;
       }
 
-      // Si no existen, crear las universidades
-      final batch = _firestore.batch();
-      
-      for (var universidad in _topUniversidades) {
-        final docRef = _firestore.collection('universidades').doc(universidad['nombre']);
-        batch.set(docRef, {
-          'carreras': [],
-          'contacto': {},
-          'direccion': {},
-          'rating': 0.0,
-          'numReviews': 0,
-        });
+      // Obtener todas las universidades del JSON
+      final universidades = await _universidadService.getUniversidades();
+      print('Inicializando ${universidades.length} universidades en Firestore...');
+
+      // Crear las universidades en lotes para no sobrecargar Firestore
+      final batchSize = 500;
+      for (var i = 0; i < universidades.length; i += batchSize) {
+        final batch = _firestore.batch();
+        final end = (i + batchSize < universidades.length) ? i + batchSize : universidades.length;
+        
+        for (var j = i; j < end; j++) {
+          final universidad = universidades[j];
+          final docRef = _firestore.collection('universidades').doc(universidad.nombre);
+          batch.set(docRef, {
+            'carreras': universidad.carreras,
+            'contacto': universidad.contacto,
+            'direccion': universidad.direccion,
+            'rating': 0.0,
+            'numReviews': 0,
+          });
+        }
+        
+        await batch.commit();
+        print('Inicializadas universidades ${i + 1} a $end');
+        
+        // Pequeña pausa entre lotes para no sobrecargar Firestore
+        if (end < universidades.length) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
       }
       
-      await batch.commit();
       print('Universidades inicializadas correctamente');
     } catch (e) {
       print('Error al inicializar universidades: $e');

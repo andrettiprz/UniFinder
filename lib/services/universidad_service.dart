@@ -62,10 +62,37 @@ class UniversidadService {
 
   // Actualizar el rating de una universidad
   Future<void> actualizarRating(String universidadId, double nuevoRating, int numReviews) async {
-    await _firestore.collection(_collection).doc(universidadId).update({
-      'rating': nuevoRating,
-      'numReviews': numReviews,
-    });
+    try {
+      print('Actualizando rating para universidad: $universidadId');
+      print('Nuevo rating: $nuevoRating, Num reviews: $numReviews');
+      
+      // Verificar si el documento existe antes de actualizarlo
+      final docRef = _firestore.collection(_collection).doc(universidadId);
+      final doc = await docRef.get();
+      
+      if (!doc.exists) {
+        print('Error: Universidad no encontrada en Firestore: $universidadId');
+        // Intentar crear el documento si no existe
+        await docRef.set({
+          'carreras': [],
+          'contacto': {},
+          'direccion': {},
+          'rating': nuevoRating,
+          'numReviews': numReviews,
+        });
+        return;
+      }
+      
+      await docRef.update({
+        'rating': nuevoRating,
+        'numReviews': numReviews,
+      });
+      
+      print('Rating actualizado correctamente');
+    } catch (e) {
+      print('Error al actualizar rating: $e');
+      throw Exception('Error al actualizar rating: $e');
+    }
   }
 
   // Obtener una universidad por su ID

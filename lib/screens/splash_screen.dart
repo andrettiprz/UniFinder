@@ -6,8 +6,10 @@ import '../theme/app_theme.dart';
 import '../main.dart';
 import '../services/universidad_service.dart';
 import '../services/review_service.dart';
+import '../services/initial_data_service.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/review_provider.dart';
+import '../providers/universidad_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -55,9 +57,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       // Inicializar servicios
       final reviewService = ReviewService();
       final universidadService = UniversidadService();
+      final initialDataService = InitialDataService();
+
+      // Asegurar que las universidades existan en Firestore
+      await initialDataService.inicializarUniversidades();
 
       // Iniciar precarga de datos en paralelo
-      await Future.wait([
+      final results = await Future.wait([
         // Cargar universidades del JSON
         universidadService.getUniversidades(),
         // Cargar universidades con reseñas
@@ -65,20 +71,38 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       ]);
 
       if (mounted) {
+        final universidades = results[0] as List<Universidad>;
+        final ratingsSnapshot = results[1] as QuerySnapshot;
+
+        // Crear mapa de ratings
+        final ratings = <String, double>{};
+        final numReviews = <String, int>{};
+        for (var doc in ratingsSnapshot.docs) {
+          final universidadId = doc['universidadId'] as String;
+          ratings[universidadId] = (doc['rating'] as num).toDouble();
+          numReviews[universidadId] = (doc['numReviews'] as num).toInt();
+        }
+
         // Inicializar providers
         final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
         final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
+        final universidadProvider = Provider.of<UniversidadProvider>(context, listen: false);
         
         // Inicializar datos de los providers si el usuario está autenticado
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         if (authProvider.isAuthenticated && authProvider.user != null) {
-          await Future.wait([
-            // Inicializar favoritos
-            favoritesProvider.init(),
-            // Inicializar reseñas del usuario
-            reviewProvider.loadUserReviews(authProvider.user!.uid),
-          ]);
+          // Inicializar favoritos
+          await favoritesProvider.init();
+          // Inicializar reseñas del usuario
+          await reviewProvider.loadUserReviews(authProvider.user!.uid);
         }
+
+        // Inicializar el provider de universidades con los datos precargados
+        universidadProvider.initializeData(
+          universidades: universidades,
+          ratings: ratings,
+          numReviews: numReviews,
+        );
 
         setState(() {
           _datosPreparados = true;
@@ -88,6 +112,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         if (!_controller.isCompleted) {
           await _controller.forward();
         }
+
+        // Esperar un momento para asegurar que los providers se inicialicen
+        await Future.delayed(const Duration(milliseconds: 500));
 
         // Navegar a la siguiente pantalla
         _navegarSiguientePantalla();

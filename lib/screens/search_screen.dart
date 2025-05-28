@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/universidad.dart';
 import '../services/universidad_service.dart';
+import '../services/review_service.dart';
 import 'universidad_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -12,6 +15,7 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final UniversidadService _service = UniversidadService();
+  final ReviewService _reviewService = ReviewService();
   final TextEditingController _carreraController = TextEditingController();
   final FocusNode _carreraFocusNode = FocusNode();
   List<Universidad> _universidades = [];
@@ -19,6 +23,8 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isLoading = true;
   String? _error;
   bool _showCarrerasList = false;
+  Map<String, double> _ratings = {};
+  Map<String, int> _numReviews = {};
 
   // Filtros
   String? _selectedEstado;
@@ -59,17 +65,38 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadUniversidades() async {
     try {
-      final universidades = await _service.getUniversidades();
+      // Cargar universidades y sus ratings en paralelo
+      final universidadesFuture = _service.getUniversidades();
+      final ratingsFuture = _reviewService.getUniversidadesConReviews();
+
+      final results = await Future.wait([universidadesFuture, ratingsFuture]);
+      final universidades = results[0] as List<Universidad>;
+      final ratingsSnapshot = results[1] as QuerySnapshot;
+
+      // Crear mapa de ratings
+      final ratings = <String, double>{};
+      final numReviews = <String, int>{};
+      for (var doc in ratingsSnapshot.docs) {
+        final universidadId = doc['universidadId'] as String;
+        ratings[universidadId] = (doc['rating'] as num).toDouble();
+        numReviews[universidadId] = (doc['numReviews'] as num).toInt();
+      }
+
       setState(() {
         _universidades = universidades;
-        _resultados = universidades;
+        _resultados = List.from(universidades);
         _universidadesFiltradas = universidades;
+        _ratings = ratings;
+        _numReviews = numReviews;
         _isLoading = false;
         
         // Cargar las listas de filtros
         _estados = Universidad.getEstadosUnicos(universidades);
         _carreras = Universidad.getCarrerasUnicas(universidades);
         _carrerasFiltradas = _carreras.take(20).toList();
+
+        // Ordenar resultados por rating
+        _ordenarPorRating();
       });
     } catch (e) {
       setState(() {
@@ -77,6 +104,14 @@ class _SearchScreenState extends State<SearchScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _ordenarPorRating() {
+    _resultados.sort((a, b) {
+      final ratingA = _ratings[a.nombre] ?? 0.0;
+      final ratingB = _ratings[b.nombre] ?? 0.0;
+      return ratingB.compareTo(ratingA);
+    });
   }
 
   void _updateMunicipios() {
@@ -151,6 +186,7 @@ class _SearchScreenState extends State<SearchScreen> {
           return universidad.carreras.any((carrera) =>
             carrera.toLowerCase().contains(query.toLowerCase()));
         }).toList();
+        _ordenarPorRating();
       }
     });
   }
@@ -196,6 +232,9 @@ class _SearchScreenState extends State<SearchScreen> {
       // Actualizar tanto las universidades filtradas como los resultados
       _universidadesFiltradas = filtradas;
       _resultados = filtradas;
+      
+      // Ordenar por rating
+      _ordenarPorRating();
     });
   }
 
@@ -208,8 +247,9 @@ class _SearchScreenState extends State<SearchScreen> {
       _municipios = [];
       _universidadesFiltradas = _universidades;
       _carrerasFiltradas = Universidad.getCarrerasUnicas(_universidades).take(20).toList();
-      _resultados = _universidades;
+      _resultados = List.from(_universidades);
       _showCarrerasList = false;
+      _ordenarPorRating();
     });
     _carreraFocusNode.unfocus();
   }
@@ -387,6 +427,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     itemCount: _resultados.length,
                     itemBuilder: (context, index) {
                       final universidad = _resultados[index];
+                      final rating = _ratings[universidad.nombre] ?? 0.0;
+                      final numReviews = _numReviews[universidad.nombre] ?? 0;
+                      
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: ListTile(
@@ -398,6 +441,28 @@ class _SearchScreenState extends State<SearchScreen> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  RatingBarIndicator(
+                                    rating: rating,
+                                    itemBuilder: (context, _) => const Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                    ),
+                                    itemCount: 5,
+                                    itemSize: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${rating.toStringAsFixed(1)} ($numReviews reseñas)',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 8),
                               Text(
                                 '${universidad.estado}, ${universidad.municipio}',

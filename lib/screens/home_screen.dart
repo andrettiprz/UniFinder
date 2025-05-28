@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final UniversidadService _service = UniversidadService();
   final ReviewService _reviewService = ReviewService();
   bool _isLoading = true;
+  bool _isRefreshing = false;
   List<Universidad> _universidades = [];
   Map<String, double> _ratings = {};
   Map<String, int> _numReviews = {};
@@ -31,10 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      if (!_isRefreshing) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+        });
+      }
 
       // Obtener las universidades con más reviews primero
       final snapshot = await _reviewService.getUniversidadesConReviews();
@@ -71,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _ratings = ratings;
         _numReviews = numReviews;
         _isLoading = false;
+        _isRefreshing = false;
       });
 
     } catch (e) {
@@ -79,9 +83,17 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _error = e.toString();
           _isLoading = false;
+          _isRefreshing = false;
         });
       }
     }
+  }
+
+  Future<void> _onRefresh() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+    await _cargarUniversidadesRecomendadas();
   }
 
   void _navigateToDetail(Universidad universidad) {
@@ -108,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         Expanded(
-          child: _isLoading
+          child: _isLoading && !_isRefreshing
               ? const Center(child: CircularProgressIndicator())
               : _error != null
                   ? Center(
@@ -157,72 +169,75 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _universidades.length,
-                          itemBuilder: (context, index) {
-                            final universidad = _universidades[index];
-                            final rating = _ratings[universidad.nombre] ?? 0.0;
-                            final numReviews = _numReviews[universidad.nombre] ?? 0;
-                            
-                            return Card(
-                              elevation: 2,
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(16),
-                                title: Text(
-                                  universidad.nombre,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                      : RefreshIndicator(
+                          onRefresh: _onRefresh,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _universidades.length,
+                            itemBuilder: (context, index) {
+                              final universidad = _universidades[index];
+                              final rating = _ratings[universidad.nombre] ?? 0.0;
+                              final numReviews = _numReviews[universidad.nombre] ?? 0;
+                              
+                              return Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.only(bottom: 16),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.all(16),
+                                  title: Text(
+                                    universidad.nombre,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          RatingBarIndicator(
+                                            rating: rating,
+                                            itemBuilder: (context, _) => const Icon(
+                                              Icons.star,
+                                              color: Colors.amber,
+                                            ),
+                                            itemCount: 5,
+                                            itemSize: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '${rating.toStringAsFixed(1)} ($numReviews reseñas)',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${universidad.estado}, ${universidad.municipio}',
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                      Text(
+                                        '${universidad.numeroCarreras} carreras disponibles',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color:
+                                                  Theme.of(context).colorScheme.primary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () => _navigateToDetail(universidad),
                                 ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        RatingBarIndicator(
-                                          rating: rating,
-                                          itemBuilder: (context, _) => const Icon(
-                                            Icons.star,
-                                            color: Colors.amber,
-                                          ),
-                                          itemCount: 5,
-                                          itemSize: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '${rating.toStringAsFixed(1)} ($numReviews reseñas)',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '${universidad.estado}, ${universidad.municipio}',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                    Text(
-                                      '${universidad.numeroCarreras} carreras disponibles',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color:
-                                                Theme.of(context).colorScheme.primary,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                                onTap: () => _navigateToDetail(universidad),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
         ),
       ],
