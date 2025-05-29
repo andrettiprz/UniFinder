@@ -1,4 +1,6 @@
+// Modelo que representa una universidad con sus datos y métodos relacionados
 class Universidad {
+  // Datos básicos de la universidad
   final String nombre;
   final List<String> carreras;
   final Map<String, String> contacto;
@@ -6,6 +8,7 @@ class Universidad {
   double rating;
   int numReviews;
 
+  // Constructor que requiere los datos básicos y permite rating y numReviews opcionales
   Universidad({
     required this.nombre,
     required this.carreras,
@@ -15,6 +18,7 @@ class Universidad {
     this.numReviews = 0,
   });
 
+  // Constructor de fábrica para crear una instancia desde un mapa JSON
   factory Universidad.fromJson(Map<String, dynamic> json) {
     return Universidad(
       nombre: json['nombre'] as String? ?? '',
@@ -34,6 +38,7 @@ class Universidad {
     );
   }
 
+  // Convierte la instancia a un mapa JSON
   Map<String, dynamic> toJson() {
     return {
       'nombre': nombre,
@@ -45,11 +50,14 @@ class Universidad {
     };
   }
 
+  // Getter que retorna el número total de carreras
   int get numeroCarreras => carreras.length;
 
+  // Getters para acceder fácilmente al estado y municipio
   String get estado => direccion['estado'] ?? '';
   String get municipio => direccion['municipio'] ?? '';
 
+  // Obtiene una lista ordenada de estados únicos de un conjunto de universidades
   static List<String> getEstadosUnicos(List<Universidad> universidades) {
     final estados = universidades
         .map((u) => u.estado)
@@ -60,6 +68,7 @@ class Universidad {
     return estados;
   }
 
+  // Obtiene una lista ordenada de municipios para un estado específico
   static List<String> getMunicipiosPorEstado(
     List<Universidad> universidades,
     String estado,
@@ -74,6 +83,7 @@ class Universidad {
     return municipios;
   }
 
+  // Obtiene una lista ordenada de todas las carreras únicas de un conjunto de universidades
   static List<String> getCarrerasUnicas(List<Universidad> universidades) {
     final carreras = universidades
         .expand((u) => u.carreras)
@@ -83,6 +93,7 @@ class Universidad {
     return carreras;
   }
 
+  // Verifica si la universidad cumple con los filtros especificados
   bool matchesFilters({
     String? estado,
     String? municipio,
@@ -110,6 +121,7 @@ class Universidad {
     return true;
   }
 
+  // Verifica si la universidad coincide con un término de búsqueda general
   bool matchesSearch(String query) {
     final searchQuery = query.toLowerCase();
     
@@ -130,7 +142,7 @@ class Universidad {
     );
   }
 
-  // Método para buscar carreras por palabras clave
+  // Método estático para buscar carreras usando un sistema de palabras clave y variantes
   static List<String> buscarCarreras(List<String> carreras, String query) {
     if (query.isEmpty) return carreras.take(20).toList();
 
@@ -140,11 +152,12 @@ class Universidad {
       return carreras.take(20).toList();
     }
 
+    // Separar la búsqueda en palabras clave
     final keywords = searchQuery.split(' ')
       .where((word) => word.length > 2)
       .toList();
 
-    // Mapeo de términos comunes a sus variantes
+    // Mapeo de términos comunes a sus variantes para mejorar la búsqueda
     final Map<String, List<String>> variantes = {
       'ing': ['ingenieria', 'ingeniero', 'ingeniería'],
       'lic': ['licenciatura', 'licenciado'],
@@ -166,7 +179,7 @@ class Universidad {
       return variants.isEmpty ? [keyword] : variants;
     }).toList();
 
-    // Función para calcular la relevancia de una carrera
+    // Función para calcular la relevancia de una carrera en base a las coincidencias
     int calcularRelevancia(String carrera) {
       final carreraLower = carrera.toLowerCase();
       int relevancia = 0;
@@ -192,7 +205,7 @@ class Universidad {
       return expandedKeywords.any((keyword) => carreraLower.contains(keyword));
     }).toList();
 
-    // Ordenar por relevancia
+    // Ordenar por relevancia y limitar a 20 resultados
     carrerasFiltradas.sort((a, b) => 
       calcularRelevancia(b).compareTo(calcularRelevancia(a))
     );
@@ -200,6 +213,7 @@ class Universidad {
     return carrerasFiltradas.take(20).toList();
   }
 
+  // Verifica si la universidad ofrece una carrera específica
   bool tieneCarrera(String busqueda) {
     if (busqueda.isEmpty) return true;
     

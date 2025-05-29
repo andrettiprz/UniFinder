@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Colores principales
-  static const Color primary = Color(0xFF0057B7);
-  static const Color secondary = Color(0xFFFFFFFF);
-  static const Color accent = Color(0xFF00C897);
-  static const Color textColor = Color(0xFF333333);
-  static const Color backgroundColor = Color(0xFFF5F5F5);
+  // Paleta de colores principal de la aplicación
+  static const Color primary = Color(0xFF0057B7);    // Azul principal
+  static const Color secondary = Color(0xFFFFFFFF);  // Blanco
+  static const Color accent = Color(0xFF00C897);     // Verde acento
+  static const Color textColor = Color(0xFF333333);  // Gris oscuro para texto
+  static const Color surfaceColor = Color(0xFFF5F5F5); // Gris claro para fondos
 
-  // Tema claro
+  // Configuración del tema claro de la aplicación
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.light(
+    // Esquema de colores para el tema claro
+    colorScheme: const ColorScheme.light(
       primary: primary,
       secondary: accent,
-      background: backgroundColor,
-      surface: secondary,
+      surface: surfaceColor,
+      onSurface: textColor,
       onPrimary: secondary,
       onSecondary: textColor,
       onBackground: textColor,
-      onSurface: textColor,
     ),
     
-    // AppBar tema
+    // Configuración de la barra superior (AppBar)
     appBarTheme: const AppBarTheme(
       backgroundColor: secondary,
       foregroundColor: textColor,
@@ -35,7 +35,7 @@ class AppTheme {
       ),
     ),
 
-    // Card tema
+    // Configuración de las tarjetas (Cards)
     cardTheme: CardThemeData(
       color: secondary,
       elevation: 2,
@@ -45,7 +45,7 @@ class AppTheme {
       ),
     ),
 
-    // Input decoración
+    // Configuración de los campos de entrada (TextFields)
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: secondary,
@@ -55,7 +55,7 @@ class AppTheme {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primary.withOpacity(0.5), width: 1),
+        borderSide: BorderSide(color: primary.withValues(alpha: 128), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -65,7 +65,7 @@ class AppTheme {
       floatingLabelStyle: const TextStyle(color: primary),
     ),
 
-    // Botón tema
+    // Configuración de los botones elevados (ElevatedButtons)
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,
@@ -78,7 +78,7 @@ class AppTheme {
       ),
     ),
 
-    // BottomNavigationBar tema
+    // Configuración de la barra de navegación inferior
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: secondary,
       selectedItemColor: primary,
@@ -94,41 +94,41 @@ class AppTheme {
       ),
     ),
 
-    // Lista tema
+    // Configuración de los elementos de lista (ListTiles)
     listTileTheme: const ListTileThemeData(
       iconColor: primary,
       textColor: textColor,
       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     ),
 
-    // Texto tema
+    // Configuración de los estilos de texto
     textTheme: const TextTheme(
-      headlineLarge: TextStyle(
+      headlineLarge: TextStyle(  // Títulos muy grandes
         color: textColor,
         fontSize: 28,
         fontWeight: FontWeight.bold,
       ),
-      headlineMedium: TextStyle(
+      headlineMedium: TextStyle( // Títulos grandes
         color: textColor,
         fontSize: 24,
         fontWeight: FontWeight.bold,
       ),
-      titleLarge: TextStyle(
+      titleLarge: TextStyle(     // Títulos medianos
         color: textColor,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      bodyLarge: TextStyle(
+      bodyLarge: TextStyle(      // Texto de cuerpo grande
         color: textColor,
         fontSize: 16,
       ),
-      bodyMedium: TextStyle(
+      bodyMedium: TextStyle(     // Texto de cuerpo normal
         color: textColor,
         fontSize: 14,
       ),
     ),
 
-    // Fondo de la app
-    scaffoldBackgroundColor: backgroundColor,
+    // Color de fondo predeterminado para las pantallas
+    scaffoldBackgroundColor: surfaceColor,
   );
 } 

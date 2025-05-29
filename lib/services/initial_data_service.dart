@@ -1,16 +1,16 @@
 import 'dart:math';
+import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/review.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../models/universidad.dart';
 import '../services/universidad_service.dart';
 
+// Servicio encargado de inicializar y gestionar los datos iniciales de la aplicación
 class InitialDataService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final UniversidadService _universidadService = UniversidadService();
   final Random _random = Random();
 
+  // Lista de las principales universidades de México para datos iniciales
   final List<Map<String, dynamic>> _topUniversidades = [
     {'nombre': 'Universidad Nacional Autónoma de México (UNAM)', 'rating': 0.0},
     {'nombre': 'Instituto Tecnológico y de Estudios Superiores de Monterrey (ITESM)', 'rating': 0.0},
@@ -34,6 +34,7 @@ class InitialDataService {
     {'nombre': 'Universidad Autónoma de Querétaro (UAQ)', 'rating': 0.0},
   ];
 
+  // Comentarios predefinidos positivos para reseñas con alta calificación
   final List<String> _comentariosPositivos = [
     'Excelente nivel académico y profesores muy preparados.',
     'Las instalaciones son de primer nivel.',
@@ -47,6 +48,7 @@ class InitialDataService {
     'Hay muchas oportunidades de intercambio internacional.',
   ];
 
+  // Comentarios predefinidos moderados para reseñas con calificación media
   final List<String> _comentariosModerados = [
     'Buena universidad aunque hay aspectos por mejorar.',
     'Los profesores son buenos pero algunos cursos necesitan actualización.',
@@ -60,6 +62,7 @@ class InitialDataService {
     'Buena opción educativa aunque hay que ser muy organizado.',
   ];
 
+  // Genera un comentario aleatorio basado en la calificación
   String _generarComentarioAleatorio(double rating) {
     if (rating >= 4.0) {
       return _comentariosPositivos[_random.nextInt(_comentariosPositivos.length)];
@@ -68,17 +71,19 @@ class InitialDataService {
     }
   }
 
+  // Genera reseñas iniciales para las universidades principales
   Future<void> generarReviewsIniciales() async {
     try {
-      // Primero crear las universidades
+      // Primero crear las universidades si no existen
       await _crearUniversidades();
 
-      // Luego generar las reviews en lotes más pequeños
+      // Generar reseñas para cada universidad en la lista de top universidades
       for (var universidad in _topUniversidades) {
-        // Generar entre 5 y 10 reviews por universidad
+        // Generar entre 5 y 10 reseñas por universidad
         final numReviews = 5 + _random.nextInt(6);
         final reviews = <Review>[];
         
+        // Crear las reseñas con datos aleatorios
         for (var i = 0; i < numReviews; i++) {
           final rating = universidad['rating'] + (_random.nextDouble() * 0.4 - 0.2);
           final adjustedRating = double.parse(rating.toStringAsFixed(1));
@@ -97,7 +102,7 @@ class InitialDataService {
           reviews.add(review);
         }
         
-        // Crear las reviews en lotes de 5
+        // Guardar las reseñas en lotes de 5 para no sobrecargar Firestore
         for (var i = 0; i < reviews.length; i += 5) {
           final batch = _firestore.batch();
           final end = i + 5 > reviews.length ? reviews.length : i + 5;
@@ -109,26 +114,27 @@ class InitialDataService {
           }
           
           await batch.commit();
-          // Esperar un momento entre lotes para no sobrecargar Firestore
+          // Pausa entre lotes para evitar sobrecargar Firestore
           await Future.delayed(const Duration(milliseconds: 500));
         }
         
-        // Actualizar el rating y numReviews de la universidad
-        final avgRating = reviews.fold<double>(0, (sum, review) => sum + review.rating) / reviews.length;
+        // Actualizar el rating promedio y número de reseñas de la universidad
+        final avgRating = reviews.fold<double>(0.0, (total, review) => total + review.rating) / reviews.length;
         await _firestore.collection('universidades').doc(universidad['nombre']).update({
           'rating': double.parse(avgRating.toStringAsFixed(1)),
           'numReviews': reviews.length,
         });
         
-        // Esperar un momento entre universidades
+        // Pausa entre universidades para evitar sobrecargar Firestore
         await Future.delayed(const Duration(seconds: 1));
       }
     } catch (e) {
-      print('Error al generar reviews iniciales: $e');
+      developer.log('Error al generar reviews iniciales: $e');
       throw Exception('Error al generar reviews iniciales: $e');
     }
   }
 
+  // Crea las universidades principales en Firestore si no existen
   Future<void> _crearUniversidades() async {
     try {
       final batch = _firestore.batch();
@@ -146,26 +152,27 @@ class InitialDataService {
       
       await batch.commit();
     } catch (e) {
-      print('Error al crear universidades: $e');
+      developer.log('Error al crear universidades: $e');
       throw Exception('Error al crear universidades: $e');
     }
   }
 
+  // Inicializa todas las universidades en Firestore desde el JSON
   Future<void> inicializarUniversidades() async {
     try {
-      // Verificar si ya existen universidades
+      // Verificar si ya existen universidades para evitar duplicados
       final snapshot = await _firestore.collection('universidades').limit(1).get();
-      if (!snapshot.docs.isEmpty) {
-        print('Las universidades ya están inicializadas');
+      if (snapshot.docs.isNotEmpty) {
+        developer.log('Las universidades ya están inicializadas');
         return;
       }
 
-      // Obtener todas las universidades del JSON
+      // Cargar todas las universidades desde el JSON
       final universidades = await _universidadService.getUniversidades();
-      print('Inicializando ${universidades.length} universidades en Firestore...');
+      developer.log('Inicializando ${universidades.length} universidades en Firestore...');
 
       // Crear las universidades en lotes para no sobrecargar Firestore
-      final batchSize = 500;
+      const batchSize = 500;
       for (var i = 0; i < universidades.length; i += batchSize) {
         final batch = _firestore.batch();
         final end = (i + batchSize < universidades.length) ? i + batchSize : universidades.length;
@@ -183,34 +190,35 @@ class InitialDataService {
         }
         
         await batch.commit();
-        print('Inicializadas universidades ${i + 1} a $end');
+        developer.log('Inicializadas universidades ${i + 1} a $end');
         
-        // Pequeña pausa entre lotes para no sobrecargar Firestore
+        // Pausa entre lotes para no sobrecargar Firestore
         if (end < universidades.length) {
           await Future.delayed(const Duration(milliseconds: 500));
         }
       }
       
-      print('Universidades inicializadas correctamente');
+      developer.log('Universidades inicializadas correctamente');
     } catch (e) {
-      print('Error al inicializar universidades: $e');
+      developer.log('Error al inicializar universidades: $e');
       throw Exception('Error al inicializar universidades: $e');
     }
   }
 
+  // Borra todas las reseñas y reinicia los ratings de las universidades
   Future<void> borrarTodasLasReviews() async {
     try {
-      // 1. Obtener todas las reviews
+      // 1. Obtener todas las reseñas
       final reviewsSnapshot = await _firestore.collection('reviews').get();
       
-      // 2. Borrar todas las reviews en lotes
+      // 2. Borrar todas las reseñas en un lote
       final batch = _firestore.batch();
       for (var doc in reviewsSnapshot.docs) {
         batch.delete(doc.reference);
       }
       await batch.commit();
       
-      // 3. Reiniciar los ratings de todas las universidades
+      // 3. Reiniciar los ratings y número de reseñas de todas las universidades
       final universidadesSnapshot = await _firestore.collection('universidades').get();
       final batchUniversidades = _firestore.batch();
       
@@ -222,9 +230,9 @@ class InitialDataService {
       }
       await batchUniversidades.commit();
       
-      print('Todas las reviews han sido borradas y los ratings reiniciados');
+      developer.log('Todas las reviews han sido borradas y los ratings reiniciados');
     } catch (e) {
-      print('Error al borrar las reviews: $e');
+      developer.log('Error al borrar las reviews: $e');
       throw Exception('Error al borrar las reviews: $e');
     }
   }

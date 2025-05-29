@@ -141,7 +141,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               leading: const Icon(Icons.star_outline),
               title: const Text('Mis Reviews'),
               onTap: () {
-                Navigator.pop(context); // Cierra el drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -155,7 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               title: const Text('¿No sabes qué estudiar?'),
               subtitle: const Text('Realiza un test vocacional'),
               onTap: () async {
-                Navigator.pop(context); // Cierra el drawer
+                Navigator.pop(context);
                 final url = Uri.parse('https://quevasaestudiar.com/test-vocacional/');
                 try {
                   if (await canLaunchUrl(url)) {

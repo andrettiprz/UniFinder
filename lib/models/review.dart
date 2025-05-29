@@ -1,15 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Modelo que representa una reseña de una universidad
 class Review {
+  // Identificador único de la reseña
   final String id;
+  // Identificador del usuario que hizo la reseña
   final String userId;
+  // Nombre del usuario que hizo la reseña
   final String userName;
+  // Identificador de la universidad reseñada
   final String universidadId;
+  // Nombre de la universidad reseñada
   final String universidadNombre;
+  // Calificación dada por el usuario (0-5)
   final double rating;
+  // Comentario textual de la reseña
   final String comentario;
+  // Fecha en que se creó la reseña
   final DateTime fecha;
 
+  // Constructor que requiere todos los campos
   Review({
     required this.id,
     required this.userId,
@@ -21,6 +31,7 @@ class Review {
     required this.fecha,
   });
 
+  // Constructor de fábrica para crear una instancia desde un mapa JSON
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
       id: json['id'] as String,
@@ -34,6 +45,7 @@ class Review {
     );
   }
 
+  // Convierte la instancia a un mapa JSON para almacenamiento en Firestore
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -47,6 +59,8 @@ class Review {
     };
   }
 
+  // Crea una nueva instancia con algunos campos actualizados
+  // Útil para modificar una reseña existente sin cambiar todos sus campos
   Review copyWith({
     String? id,
     String? userId,

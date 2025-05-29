@@ -2,16 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/universidad.dart';
 
+// Servicio que maneja todas las operaciones relacionadas con las universidades favoritas de los usuarios
 class FavoritesService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Referencia a la colección de favoritos
+  // Obtiene la referencia a la colección de favoritos de un usuario específico
+  // Los favoritos se almacenan como una subcolección dentro del documento del usuario
   CollectionReference<Map<String, dynamic>> _favoritesCollection(String userId) {
     return _firestore.collection('users').doc(userId).collection('favorites');
   }
 
-  // Agregar una universidad a favoritos
+  // Agrega una universidad a la lista de favoritos del usuario actual
+  // Guarda los datos principales de la universidad y la marca de tiempo
   Future<void> addToFavorites(Universidad universidad) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -25,7 +28,8 @@ class FavoritesService {
     });
   }
 
-  // Eliminar una universidad de favoritos
+  // Elimina una universidad de la lista de favoritos del usuario actual
+  // Recibe el nombre de la universidad como identificador
   Future<void> removeFromFavorites(String universidadNombre) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -33,7 +37,9 @@ class FavoritesService {
     await _favoritesCollection(user.uid).doc(universidadNombre).delete();
   }
 
-  // Obtener todas las universidades favoritas
+  // Obtiene un stream con la lista de universidades favoritas del usuario actual
+  // El stream se actualiza automáticamente cuando hay cambios en los favoritos
+  // Las universidades están ordenadas por fecha de agregado, las más recientes primero
   Stream<List<Universidad>> getFavorites() {
     final user = _auth.currentUser;
     if (user == null) {
@@ -51,7 +57,8 @@ class FavoritesService {
     });
   }
 
-  // Verificar si una universidad está en favoritos
+  // Verifica si una universidad específica está en la lista de favoritos del usuario
+  // Retorna true si la universidad está en favoritos, false en caso contrario
   Future<bool> isFavorite(String universidadNombre) async {
     final user = _auth.currentUser;
     if (user == null) return false;
@@ -63,7 +70,9 @@ class FavoritesService {
     return doc.exists;
   }
 
-  // Toggle favorito
+  // Alterna el estado de favorito de una universidad
+  // Si la universidad está en favoritos, la elimina; si no está, la agrega
+  // Retorna true si la universidad fue agregada, false si fue eliminada
   Future<bool> toggleFavorite(Universidad universidad) async {
     final isFav = await isFavorite(universidad.nombre);
     if (isFav) {

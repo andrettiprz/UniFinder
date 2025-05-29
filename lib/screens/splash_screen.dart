@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:developer' as developer;
 import '../auth/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../theme/app_theme.dart';
@@ -13,6 +14,7 @@ import '../providers/review_provider.dart';
 import '../providers/universidad_provider.dart';
 import '../models/universidad.dart';
 
+// Pantalla de carga inicial de la aplicación
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -20,20 +22,23 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+// Estado de la pantalla de splash que maneja las animaciones y la carga de datos
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  // Controlador y animaciones para los efectos visuales
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  bool _datosPreparados = false;
 
   @override
   void initState() {
     super.initState();
+    // Configuración del controlador de animación
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
+    // Animación de fade in
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -42,6 +47,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
     ));
 
+    // Animación de escala
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
@@ -50,13 +56,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
     ));
 
+    // Iniciar la carga de datos y las animaciones
     _inicializarDatos();
     _controller.forward();
   }
 
+  // Método para cargar todos los datos necesarios antes de mostrar la aplicación
   Future<void> _inicializarDatos() async {
     try {
-      // Inicializar servicios
+      // Inicializar servicios necesarios
       final reviewService = ReviewService();
       final universidadService = UniversidadService();
       final initialDataService = InitialDataService();
@@ -64,19 +72,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       // Asegurar que las universidades existan en Firestore
       await initialDataService.inicializarUniversidades();
 
-      // Iniciar precarga de datos en paralelo
+      // Cargar datos en paralelo para optimizar el tiempo de carga
       final results = await Future.wait([
-        // Cargar universidades del JSON
+        // Cargar lista completa de universidades
         universidadService.getUniversidades(),
-        // Cargar universidades con reseñas
+        // Cargar solo universidades que tienen reseñas
         reviewService.getUniversidadesConReviews(),
       ]);
 
       if (mounted) {
+        // Procesar resultados de la carga paralela
         final universidades = results[0] as List<Universidad>;
         final ratingsSnapshot = results[1] as QuerySnapshot<Map<String, dynamic>>;
 
-        // Crear mapa de ratings
+        // Crear mapas de ratings y número de reseñas
         final ratings = <String, double>{};
         final numReviews = <String, int>{};
         for (var doc in ratingsSnapshot.docs) {
@@ -85,51 +94,46 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           numReviews[universidadId] = (doc.data()['numReviews'] as num).toInt();
         }
 
-        // Inicializar providers
+        // Obtener referencias a los providers
         final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
         final reviewProvider = Provider.of<ReviewProvider>(context, listen: false);
         final universidadProvider = Provider.of<UniversidadProvider>(context, listen: false);
         
-        // Inicializar datos de los providers si el usuario está autenticado
+        // Inicializar datos específicos del usuario si está autenticado
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         if (authProvider.isAuthenticated && authProvider.user != null) {
-          // Inicializar favoritos
           favoritesProvider.init();
-          // Inicializar reseñas del usuario
           await reviewProvider.loadUserReviews(authProvider.user!.uid);
         }
 
-        // Inicializar el provider de universidades con los datos precargados
+        // Inicializar el provider de universidades con todos los datos
         universidadProvider.initializeData(
           universidades: universidades,
           ratings: ratings,
           numReviews: numReviews,
         );
 
-        setState(() {
-          _datosPreparados = true;
-        });
-
-        // Esperar a que termine la animación si aún no ha terminado
+        // Asegurar que la animación termine
         if (!_controller.isCompleted) {
           await _controller.forward();
         }
 
-        // Esperar un momento para asegurar que los providers se inicialicen
+        // Pequeña pausa para asegurar la inicialización completa
         await Future.delayed(const Duration(milliseconds: 500));
 
         // Navegar a la siguiente pantalla
         _navegarSiguientePantalla();
       }
     } catch (e) {
-      print('Error al precargar datos: $e');
-      // Aún si hay error, continuamos con la navegación
+      developer.log('Error al precargar datos: $e');
+      // Continuar con la navegación incluso si hay error
       if (mounted) {
         _navegarSiguientePantalla();
       }
     }
   }
 
+  // Método para navegar a la pantalla correspondiente según el estado de autenticación
   void _navegarSiguientePantalla() {
     if (!mounted) return;
 
@@ -172,7 +176,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo grande
+                    // Logo de la aplicación
                     SizedBox(
                       width: logoSize,
                       height: logoSize,
@@ -183,7 +187,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // Texto UniFinder
+                    // Título de la aplicación
                     Text(
                       'UniFinder',
                       style: TextStyle(
@@ -194,11 +198,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Texto descriptivo
+                    // Subtítulo descriptivo
                     Text(
                       'Encuentra tu universidad ideal',
                       style: TextStyle(
-                        color: AppTheme.textColor.withOpacity(0.7),
+                        color: AppTheme.textColor.withValues(alpha: 179),
                         fontSize: 20,
                         fontWeight: FontWeight.w400,
                         letterSpacing: 0.3,
@@ -206,14 +210,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
-                    // Indicador de carga
+                    // Indicador de carga circular
                     SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.primary.withOpacity(0.5),
+                          AppTheme.primary.withValues(alpha: 128),
                         ),
                       ),
                     ),

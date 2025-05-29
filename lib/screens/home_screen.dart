@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:provider/provider.dart';
+import 'dart:developer' as developer;
 import '../models/universidad.dart';
 import '../services/universidad_service.dart';
 import '../services/review_service.dart';
 import '../providers/universidad_provider.dart';
 import 'universidad_detail_screen.dart';
 
+// Pantalla principal que muestra las universidades recomendadas
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,10 +17,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Servicios para obtener datos de universidades y reseñas
   final UniversidadService _service = UniversidadService();
   final ReviewService _reviewService = ReviewService();
-  bool _isRefreshing = false;
 
+  // Método para cargar las universidades recomendadas basadas en reseñas
   Future<void> _cargarUniversidadesRecomendadas() async {
     if (!mounted) return;
     
@@ -28,21 +31,22 @@ class _HomeScreenState extends State<HomeScreen> {
       
       if (!mounted) return;
 
-      // Obtener los detalles de las universidades del JSON
+      // Obtener los detalles completos de las universidades
       final todasUniversidades = await _service.getUniversidades();
       
       if (!mounted) return;
 
-      // Mapear las universidades por nombre para fácil acceso
+      // Crear un mapa para acceso rápido a las universidades por nombre
       final universidadesPorNombre = {
         for (var u in todasUniversidades) u.nombre: u
       };
 
-      // Crear la lista final de universidades recomendadas
+      // Preparar las estructuras de datos para las universidades recomendadas
       final universidadesRecomendadas = <Universidad>[];
       final ratings = <String, double>{};
       final numReviews = <String, int>{};
 
+      // Procesar los datos de las reseñas y crear la lista de recomendaciones
       for (var doc in snapshot.docs) {
         final universidadId = doc['universidadId'] as String;
         final universidad = universidadesPorNombre[universidadId];
@@ -53,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
+      // Actualizar el provider con los datos obtenidos
       if (mounted) {
         final provider = Provider.of<UniversidadProvider>(context, listen: false);
         provider.initializeData(
@@ -63,28 +68,21 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
     } catch (e) {
-      print('Error al cargar universidades recomendadas: $e');
+      developer.log('Error al cargar universidades recomendadas: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al actualizar: $e')),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
     }
   }
 
+  // Método para manejar la actualización manual (pull-to-refresh)
   Future<void> _onRefresh() async {
-    setState(() {
-      _isRefreshing = true;
-    });
     await _cargarUniversidadesRecomendadas();
   }
 
+  // Método para navegar a la pantalla de detalles de una universidad
   void _navigateToDetail(Universidad universidad) {
     Navigator.push(
       context,
@@ -96,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Usar Consumer para recibir actualizaciones del UniversidadProvider
     return Consumer<UniversidadProvider>(
       builder: (context, provider, child) {
         final universidades = provider.universidades;
@@ -105,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Título de la sección
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
@@ -114,10 +114,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            // Lista de universidades
             Expanded(
               child: !provider.isInitialized
+                  // Mostrar indicador de carga mientras se inicializan los datos
                   ? const Center(child: CircularProgressIndicator())
                   : universidades.isEmpty
+                      // Mostrar mensaje cuando no hay universidades con reseñas
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -144,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         )
+                      // Mostrar lista de universidades con reseñas
                       : RefreshIndicator(
                           onRefresh: _onRefresh,
                           child: ListView.builder(
@@ -154,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               final rating = ratings[universidad.nombre] ?? 0.0;
                               final reviewCount = numReviews[universidad.nombre] ?? 0;
                               
+                              // Tarjeta de universidad con información relevante
                               return Card(
                                 elevation: 2,
                                 margin: const EdgeInsets.only(bottom: 16),
@@ -170,6 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 8),
+                                      // Barra de calificación y número de reseñas
                                       Row(
                                         children: [
                                           RatingBarIndicator(
@@ -192,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 8),
+                                      // Información de ubicación y carreras
                                       Text(
                                         '${universidad.estado}, ${universidad.municipio}',
                                         style: Theme.of(context).textTheme.bodyMedium,

@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/universidad.dart';
 
+// Proveedor para manejar el estado de las universidades en la aplicación
 class UniversidadProvider extends ChangeNotifier {
+  // Lista de todas las universidades
   List<Universidad> _universidades = [];
+  // Mapa de ratings por nombre de universidad
   Map<String, double> _ratings = {};
+  // Mapa de número de reseñas por nombre de universidad
   Map<String, int> _numReviews = {};
+  // Indica si el proveedor ha sido inicializado
   bool _isInitialized = false;
 
+  // Getter que devuelve las universidades filtradas y ordenadas
   List<Universidad> get universidades {
     // Filtrar solo universidades con reseñas y ordenar por rating
     final universidadesConReviews = _universidades.where((u) {
@@ -24,10 +30,12 @@ class UniversidadProvider extends ChangeNotifier {
     return universidadesConReviews;
   }
   
+  // Getters para acceder a los datos del proveedor
   Map<String, double> get ratings => _ratings;
   Map<String, int> get numReviews => _numReviews;
   bool get isInitialized => _isInitialized;
 
+  // Inicializa los datos del proveedor con la información proporcionada
   void initializeData({
     required List<Universidad> universidades,
     required Map<String, double> ratings,
@@ -40,6 +48,7 @@ class UniversidadProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Limpia todos los datos del proveedor
   void clear() {
     _universidades = [];
     _ratings = {};

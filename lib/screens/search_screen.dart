@@ -6,6 +6,7 @@ import '../services/universidad_service.dart';
 import '../services/review_service.dart';
 import 'universidad_detail_screen.dart';
 
+// Pantalla de búsqueda que permite filtrar universidades por varios criterios
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -14,10 +15,15 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  // Servicios para obtener datos
   final UniversidadService _service = UniversidadService();
   final ReviewService _reviewService = ReviewService();
+  
+  // Controladores y nodos de foco para el campo de búsqueda de carreras
   final TextEditingController _carreraController = TextEditingController();
   final FocusNode _carreraFocusNode = FocusNode();
+  
+  // Listas principales de datos
   List<Universidad> _universidades = [];
   List<Universidad> _resultados = [];
   bool _isLoading = true;
@@ -26,12 +32,12 @@ class _SearchScreenState extends State<SearchScreen> {
   Map<String, double> _ratings = {};
   Map<String, int> _numReviews = {};
 
-  // Filtros
+  // Estados de los filtros seleccionados
   String? _selectedEstado;
   String? _selectedMunicipio;
   String? _selectedCarrera;
 
-  // Listas para los dropdowns
+  // Listas para las opciones de los filtros
   List<String> _estados = [];
   List<String> _municipios = [];
   List<String> _carreras = [];
@@ -54,6 +60,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  // Maneja los cambios de foco en el campo de búsqueda de carreras
   void _onCarreraFocusChange() {
     setState(() {
       _showCarrerasList = _carreraFocusNode.hasFocus;
@@ -63,6 +70,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  // Carga inicial de datos de universidades y sus calificaciones
   Future<void> _loadUniversidades() async {
     try {
       // Cargar universidades y sus ratings en paralelo
@@ -73,7 +81,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final universidades = results[0] as List<Universidad>;
       final ratingsSnapshot = results[1] as QuerySnapshot;
 
-      // Crear mapa de ratings
+      // Procesar los ratings y número de reseñas
       final ratings = <String, double>{};
       final numReviews = <String, int>{};
       for (var doc in ratingsSnapshot.docs) {
@@ -90,12 +98,12 @@ class _SearchScreenState extends State<SearchScreen> {
         _numReviews = numReviews;
         _isLoading = false;
         
-        // Cargar las listas de filtros
+        // Inicializar las listas de filtros
         _estados = Universidad.getEstadosUnicos(universidades);
         _carreras = Universidad.getCarrerasUnicas(universidades);
         _carrerasFiltradas = _carreras.take(20).toList();
 
-        // Ordenar resultados por rating
+        // Ordenar resultados por calificación
         _ordenarPorRating();
       });
     } catch (e) {
@@ -106,6 +114,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  // Ordena las universidades por su calificación promedio
   void _ordenarPorRating() {
     _resultados.sort((a, b) {
       final ratingA = _ratings[a.nombre] ?? 0.0;
@@ -114,6 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  // Actualiza la lista de municipios cuando se selecciona un estado
   void _updateMunicipios() {
     if (_selectedEstado != null) {
       setState(() {
@@ -130,6 +140,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  // Actualiza la lista de universidades según los filtros de estado y municipio
   void _updateUniversidadesFiltradas() {
     setState(() {
       // Filtrar universidades por estado y municipio
@@ -149,6 +160,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  // Actualiza la lista de carreras disponibles según las universidades filtradas
   void _updateCarrerasDisponibles() {
     // Obtener solo las carreras de las universidades filtradas
     final carrerasDisponibles = Universidad.getCarrerasUnicas(_universidadesFiltradas);
@@ -160,7 +172,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _carrerasFiltradas = Universidad.buscarCarreras(carrerasDisponibles, _carreraController.text);
       }
       
-      // Si la carrera seleccionada ya no está disponible, limpiarla
+      // Limpiar la carrera seleccionada si ya no está disponible
       if (_selectedCarrera != null && !carrerasDisponibles.contains(_selectedCarrera)) {
         _selectedCarrera = null;
         _carreraController.clear();
@@ -168,6 +180,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  // Filtra las carreras según el texto de búsqueda
   void _filterCarreras(String query) {
     if (query.trim().isEmpty) {
       setState(() {
@@ -180,7 +193,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final carrerasDisponibles = Universidad.getCarrerasUnicas(_universidadesFiltradas);
       _carrerasFiltradas = Universidad.buscarCarreras(carrerasDisponibles, query);
       
-      // Si hay una búsqueda activa, filtrar las universidades que coincidan
+      // Filtrar universidades que coincidan con la búsqueda
       if (query.trim().isNotEmpty) {
         _resultados = _universidadesFiltradas.where((universidad) {
           return universidad.carreras.any((carrera) =>
@@ -191,6 +204,7 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  // Selecciona una carrera de la lista de sugerencias
   void _selectCarrera(String carrera) {
     setState(() {
       _selectedCarrera = carrera;
@@ -201,6 +215,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _carreraFocusNode.unfocus();
   }
 
+  // Aplica todos los filtros seleccionados
   void _applyFilters() {
     setState(() {
       // Comenzar con todas las universidades
@@ -216,7 +231,7 @@ class _SearchScreenState extends State<SearchScreen> {
         filtradas = filtradas.where((u) => u.municipio == _selectedMunicipio).toList();
       }
       
-      // Aplicar filtro de carrera (ya sea seleccionada o búsqueda en curso)
+      // Aplicar filtro de carrera
       if (_selectedCarrera != null) {
         filtradas = filtradas.where((u) => 
           u.carreras.contains(_selectedCarrera)
@@ -229,15 +244,16 @@ class _SearchScreenState extends State<SearchScreen> {
         ).toList();
       }
       
-      // Actualizar tanto las universidades filtradas como los resultados
+      // Actualizar las listas filtradas
       _universidadesFiltradas = filtradas;
       _resultados = filtradas;
       
-      // Ordenar por rating
+      // Ordenar por calificación
       _ordenarPorRating();
     });
   }
 
+  // Reinicia todos los filtros a su estado inicial
   void _resetFilters() {
     setState(() {
       _selectedEstado = null;
@@ -256,10 +272,12 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Mostrar indicador de carga mientras se cargan los datos
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Mostrar mensaje de error si ocurrió algún problema
     if (_error != null) {
       return Center(child: Text('Error: $_error'));
     }
@@ -277,6 +295,7 @@ class _SearchScreenState extends State<SearchScreen> {
       ),
       body: Column(
         children: [
+          // Sección de filtros
           Card(
             margin: const EdgeInsets.all(16),
             child: Padding(
@@ -289,7 +308,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
-                  // Dropdown de Estados
+                  // Filtro de estados
                   DropdownButtonFormField<String>(
                     value: _selectedEstado,
                     isExpanded: true,
@@ -317,7 +336,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  // Dropdown de Municipios
+                  // Filtro de municipios
                   DropdownButtonFormField<String>(
                     value: _selectedMunicipio,
                     isExpanded: true,
@@ -346,7 +365,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           },
                   ),
                   const SizedBox(height: 16),
-                  // Campo de búsqueda de carreras
+                  // Campo de búsqueda de carreras con autocompletado
                   Stack(
                     children: [
                       TextField(
@@ -380,6 +399,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           });
                         },
                       ),
+                      // Lista de sugerencias de carreras
                       if (_showCarrerasList)
                         Padding(
                           padding: const EdgeInsets.only(top: 60),
@@ -411,8 +431,10 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
           ),
+          // Lista de resultados
           Expanded(
             child: _resultados.isEmpty
+                // Mensaje cuando no hay resultados
                 ? Center(
                     child: Text(
                       'No se encontraron universidades con los filtros seleccionados',
@@ -422,6 +444,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       textAlign: TextAlign.center,
                     ),
                   )
+                // Lista de universidades encontradas
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _resultados.length,
@@ -430,6 +453,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       final rating = _ratings[universidad.nombre] ?? 0.0;
                       final numReviews = _numReviews[universidad.nombre] ?? 0;
                       
+                      // Tarjeta de universidad con su información
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: ListTile(
@@ -442,6 +466,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const SizedBox(height: 8),
+                              // Calificación y número de reseñas
                               Row(
                                 children: [
                                   RatingBarIndicator(
@@ -464,6 +489,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ],
                               ),
                               const SizedBox(height: 8),
+                              // Información de ubicación y carreras
                               Text(
                                 '${universidad.estado}, ${universidad.municipio}',
                                 style: Theme.of(context).textTheme.bodyMedium,
